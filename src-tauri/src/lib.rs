@@ -34,6 +34,11 @@ pub fn run() {
             invoke::debitors::get_all_debitors,
             invoke::debitors::create_debitor,
             invoke::debitors::delete_debitor,
+            invoke::bills::get_all_bills,
+            invoke::bills::get_pending_bills,
+            invoke::bills::get_bill_by_id,
+            invoke::bills::create_bill,
+            invoke::bills::generate_bill_document,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

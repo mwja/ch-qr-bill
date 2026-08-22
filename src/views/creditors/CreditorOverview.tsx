@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { Creditor } from "../../models/creditors";
-import LargeLayout from "../layout/layouts/LargeLayout";
-import Header from "../Header";
+import LargeLayout from "../../components/layout/layouts/LargeLayout";
+import Header from "../../components/Header";
 import {
     Button,
     DataGrid,
@@ -16,7 +16,13 @@ import {
     MessageBarTitle,
     TableColumnDefinition,
 } from "@fluentui/react-components";
-import { EditRegular, DeleteRegular } from "@fluentui/react-icons";
+import {
+    EditRegular,
+    DeleteRegular,
+    AddFilled,
+    AddRegular,
+    bundleIcon,
+} from "@fluentui/react-icons";
 
 const columns: TableColumnDefinition<Creditor>[] = [
     {
@@ -81,6 +87,7 @@ const columns: TableColumnDefinition<Creditor>[] = [
     },
 ];
 
+const Add = bundleIcon(AddFilled, AddRegular);
 export default function CreditorOverview() {
     const {
         data: creditorData,
@@ -94,7 +101,12 @@ export default function CreditorOverview() {
     return (
         <LargeLayout>
             <Header title="Creditors">
-                <Button appearance="primary" as="a" href="#/creditors/new">
+                <Button
+                    appearance="primary"
+                    as="a"
+                    href="#/creditors/new"
+                    icon={<Add />}
+                >
                     Create Creditor
                 </Button>
             </Header>

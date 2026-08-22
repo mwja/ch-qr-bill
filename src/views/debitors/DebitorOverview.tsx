@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { Debitor } from "../../models/debitors";
-import LargeLayout from "../layout/layouts/LargeLayout";
-import Header from "../Header";
+import LargeLayout from "../../components/layout/layouts/LargeLayout";
+import Header from "../../components/Header";
 import {
     Button,
     DataGrid,
@@ -16,7 +16,13 @@ import {
     MessageBarTitle,
     TableColumnDefinition,
 } from "@fluentui/react-components";
-import { EditRegular, DeleteRegular } from "@fluentui/react-icons";
+import {
+    EditRegular,
+    DeleteRegular,
+    bundleIcon,
+    AddFilled,
+    AddRegular,
+} from "@fluentui/react-icons";
 
 const columns: TableColumnDefinition<Debitor>[] = [
     {
@@ -73,6 +79,7 @@ const columns: TableColumnDefinition<Debitor>[] = [
     },
 ];
 
+const Add = bundleIcon(AddFilled, AddRegular);
 export default function DebitorOverview() {
     const {
         data: debitorData,
@@ -86,7 +93,12 @@ export default function DebitorOverview() {
     return (
         <LargeLayout>
             <Header title="Debitors">
-                <Button appearance="primary" as="a" href="#/debitors/new">
+                <Button
+                    appearance="primary"
+                    as="a"
+                    href="#/debitors/new"
+                    icon={<Add />}
+                >
                     Create Debitor
                 </Button>
             </Header>

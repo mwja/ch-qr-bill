@@ -6,7 +6,9 @@ import AppBreadcrumbs from "./Breadcrumbs";
 export default function Layout() {
     return (
         <div className="flex flex-row h-dvh w-dvw bg-(--colorNeutralBackground4)">
-            <Navigation />
+            <div className="shrink-0">
+                <Navigation />
+            </div>
             <div className="flex flex-col h-dvh grow ">
                 <GlobalHeader />
                 <div className="mb-2">

@@ -28,3 +28,13 @@ export interface Bill {
     created_at: number;
     replaced_by: number | null;
 }
+
+export interface CreateBillInput extends Omit<
+    Bill,
+    "id" | "user_facing_id" | "created_at"
+> {}
+
+export interface CreateBillItemInput extends Omit<
+    BillItem,
+    "id" | "bill_id" | "total_price" | "created_at"
+> {}

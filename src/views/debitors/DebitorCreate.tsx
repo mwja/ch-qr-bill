@@ -14,11 +14,12 @@ import {
     MessageBarBody,
     MessageBarTitle,
 } from "@fluentui/react-components";
-import LargeLayout from "../layout/layouts/LargeLayout";
+import LargeLayout from "../../components/layout/layouts/LargeLayout";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CreateCreditorInput } from "../../models/creditors";
+import { CreateDebitorInput } from "../../models/debitors";
 import { invoke } from "@tauri-apps/api/core";
-import Header from "../Header";
+import Header from "../../components/Header";
+import { useNavigate } from "react-router";
 
 const schema = z.object({
     name: z.string().min(1, { message: "Name is required" }),
@@ -27,34 +28,34 @@ const schema = z.object({
     city: z.string().min(1, { message: "City is required" }),
     postal_code: z.string().min(1, { message: "Postal code is required" }),
     country: z.string().min(1, { message: "Country is required" }),
-    vat_number: z.string(),
-    iban: z.string(),
 });
 
-export default function CreditorCreate() {
+export default function DebitorCreate() {
     const { register, formState, handleSubmit } = useForm({
         resolver: zodResolver(schema),
         defaultValues: {
             country: "CH",
         },
     });
+    const navigate = useNavigate();
 
     const queryClient = useQueryClient();
     const { mutate, isPending, error } = useMutation({
-        mutationKey: ["createCreditor"],
-        mutationFn: (data: CreateCreditorInput) => {
-            return invoke("create_creditor", { input: data });
+        mutationKey: ["createDebitor"],
+        mutationFn: (data: CreateDebitorInput) => {
+            return invoke("create_debitor", { input: data });
         },
-        onSuccess: () => {
-            return queryClient.invalidateQueries({ queryKey: ["creditors"] });
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: ["debitors"] });
+            return navigate("#/debitors");
         },
     });
 
     return (
         <LargeLayout>
-            <Header title="Create a Creditor" />
+            <Header title="Create a debitor" />
             <form
-                className="flex flex-col *:flex *:flex-col *:gap-y-3 gap-y-4 max-w-md"
+                className="flex flex-col *:flex *:flex-col *:gap-y-2 gap-y-4 max-w-md"
                 onSubmit={handleSubmit((data) => mutate(data))}
             >
                 {error && (
@@ -118,25 +119,6 @@ export default function CreditorCreate() {
                         ))}
                     </Combobox>
                 </div>
-                <Field
-                    label="VAT number"
-                    validationMessage={formState.errors.vat_number?.message}
-                    validationState={
-                        formState.errors.vat_number ? "error" : "none"
-                    }
-                >
-                    <Input
-                        placeholder="VAT number"
-                        {...register("vat_number")}
-                    />
-                </Field>
-                <Field
-                    label="IBAN"
-                    validationMessage={formState.errors.iban?.message}
-                    validationState={formState.errors.iban ? "error" : "none"}
-                >
-                    <Input placeholder="IBAN" {...register("iban")} />
-                </Field>
                 <Button
                     type="submit"
                     as="button"

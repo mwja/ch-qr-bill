@@ -1,7 +1,7 @@
 use ironpress::{HtmlConverter, Margin, PageSize};
 use swiss_qrust::{Address, BillData, Language};
 
-use crate::db::models;
+use crate::db::models::{self, Bill};
 
 // include payment_item.html and payment_page.html
 const PAYMENT_ITEM_HTML: &str = include_str!("template/payment_item.html");
@@ -61,6 +61,17 @@ pub struct BillItem {
     pub quantity: f64,
     pub unit_price: f64,
     pub total_price: f64,
+}
+
+impl From<models::BillItem> for BillItem {
+    fn from(item: models::BillItem) -> Self {
+        BillItem {
+            description: item.description,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            total_price: item.total_price,
+        }
+    }
 }
 
 pub struct BillBuilder {

@@ -4,19 +4,24 @@ import ThemeProvider from "./components/ThemeProvider";
 import "./App.css";
 import { createHashRouter, Route, RouterProvider, Routes } from "react-router";
 import Layout from "./components/layout";
-import DebitorCreate from "./components/debitors/DebitorCreate";
+import DebitorCreate from "./views/debitors/DebitorCreate";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import DebitorView from "./components/debitors/DebitorView";
-import CreditorCreate from "./components/creditors/CreditorCreate";
-import CreditorView from "./components/creditors/CreditorView";
-import DebitorOverview from "./components/debitors/DebitorOverview";
-import CreditorOverview from "./components/creditors/CreditorOverview";
+import DebitorView from "./views/debitors/DebitorView";
+import CreditorCreate from "./views/creditors/CreditorCreate";
+import CreditorView from "./views/creditors/CreditorView";
+import DebitorOverview from "./views/debitors/DebitorOverview";
+import CreditorOverview from "./views/creditors/CreditorOverview";
+import BillCreate from "./views/bills/BillCreate";
 
 const queryClient = new QueryClient();
 const router = createHashRouter([
     {
         element: <Layout />,
         children: [
+            {
+                index: true,
+                element: <p>hi</p>,
+            },
             {
                 path: "debitors",
                 handle: { breadcrumb: "Debitors" },
@@ -54,6 +59,20 @@ const router = createHashRouter([
                         path: ":id",
                         element: <CreditorView />,
                         handle: { breadcrumb: "View" },
+                    },
+                ],
+            },
+            {
+                path: "bills",
+                handle: { breadcrumb: "Bills" },
+                children: [
+                    {
+                        index: true,
+                        element: <p>hi</p>,
+                    },
+                    {
+                        path: "new",
+                        element: <BillCreate />,
                     },
                 ],
             },

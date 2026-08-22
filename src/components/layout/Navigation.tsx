@@ -3,27 +3,20 @@ import {
     NavDrawerHeader,
     Tooltip,
     Hamburger,
-    NavSectionHeader,
     NavDrawerBody,
     NavDivider,
     NavItem,
     useRestoreFocusTarget,
-    NavCategory,
-    NavCategoryItem,
-    NavSubItem,
-    NavSubItemGroup,
-    Title3,
     AppItem,
-    MessageBar,
-    MessageBarBody,
-    MessageBarTitle,
-    ProgressBar,
-    Spinner,
+    NavCategoryItem,
+    NavCategory,
+    NavSubItemGroup,
+    NavSubItem,
 } from "@fluentui/react-components";
 import {
-    AddFilled,
-    AddRegular,
     bundleIcon,
+    DocumentTableFilled,
+    DocumentTableRegular,
     FolderFilled,
     FolderRegular,
     OpenFilled,
@@ -33,23 +26,26 @@ import {
 } from "@fluentui/react-icons";
 import { useState } from "react";
 import { useLocation } from "react-router";
-import { useAllDebitors } from "../../hooks";
-import { invoke } from "@tauri-apps/api/core";
-import { Debitor } from "../../models/debitors";
-import { useQuery } from "@tanstack/react-query";
 import { appDataDir } from "@tauri-apps/api/path";
 import { openPath } from "@tauri-apps/plugin-opener";
-import { Creditor } from "../../models/creditors";
+import { useQuery } from "@tanstack/react-query";
+import { invoke } from "@tauri-apps/api/core";
+import { Bill } from "../../models/bills";
 
 const Settings = bundleIcon(SettingsFilled, SettingsRegular);
 const DebitorsCategoryIcon = bundleIcon(FolderFilled, FolderRegular);
-const Add = bundleIcon(AddFilled, AddRegular);
 const OpenExternal = bundleIcon(OpenFilled, OpenRegular);
+const DocumentTable = bundleIcon(DocumentTableFilled, DocumentTableRegular);
 
 export default function Navigation() {
     const loc = useLocation();
     const [isOpen, setIsOpen] = useState(true);
     const restoreFocusTargetAttributes = useRestoreFocusTarget();
+
+    const { data, isPending, error } = useQuery<Bill[]>({
+        queryKey: ["bills", "pending_bills"],
+        queryFn: () => invoke("get_pending_bills"),
+    });
 
     return isOpen ? (
         <NavDrawer open={isOpen} type="inline" selectedValue={loc.pathname}>
@@ -60,6 +56,28 @@ export default function Navigation() {
             </NavDrawerHeader>
             <NavDrawerBody className="scrollbar-none">
                 <AppItem>CH-QR-Bill Manager</AppItem>
+                <NavCategory value="bills">
+                    <NavCategoryItem icon={<DocumentTable />} value="bills">
+                        Bills
+                    </NavCategoryItem>
+                    <NavSubItemGroup>
+                        <NavSubItem href="#/bills" value="/bills">
+                            All
+                        </NavSubItem>
+                        {data?.map((bill) => (
+                            <NavSubItem
+                                key={bill.id}
+                                href={`#/bills/${bill.id}`}
+                                value={`/bills/${bill.id}`}
+                            >
+                                {bill.user_facing_id} ({bill.status})
+                            </NavSubItem>
+                        ))}
+                        <NavSubItem href="#/bills/new" value="/bills/new">
+                            Create new bill...
+                        </NavSubItem>
+                    </NavSubItemGroup>
+                </NavCategory>
                 <NavItem
                     icon={<DebitorsCategoryIcon />}
                     href="#/debitors"
