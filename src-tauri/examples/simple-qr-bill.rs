@@ -12,6 +12,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             country: "CH".to_string(),
             iban: "CH4789144274621429278".to_string(),
             vat_number: Some("CHE-123.456.789 MWST".to_string()),
+            logo_base64: None,
         })
         .debitor(Debitor {
             name: "Jane Smith".to_string(),

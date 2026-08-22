@@ -1,4 +1,4 @@
-import { Body1, Caption1, Subtitle1, Title2 } from "@fluentui/react-components";
+import { Body1, Title2 } from "@fluentui/react-components";
 
 export default function Header(
     props: React.PropsWithChildren<{ title: string; subtitle?: string }>,

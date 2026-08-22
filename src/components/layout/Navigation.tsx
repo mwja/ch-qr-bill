@@ -42,7 +42,7 @@ export default function Navigation() {
     const [isOpen, setIsOpen] = useState(true);
     const restoreFocusTargetAttributes = useRestoreFocusTarget();
 
-    const { data, isPending, error } = useQuery<Bill[]>({
+    const { data } = useQuery<Bill[]>({
         queryKey: ["bills", "pending_bills"],
         queryFn: () => invoke("get_pending_bills"),
     });

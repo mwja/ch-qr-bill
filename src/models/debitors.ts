@@ -6,10 +6,7 @@ export interface Debitor {
     city: string;
     postal_code: string;
     country: string;
-    created_at: number;
+    created_at: string;
 }
 
-export interface CreateDebitorInput extends Omit<
-    Debitor,
-    "id" | "created_at"
-> {}
+export interface DebitorInput extends Omit<Debitor, "id" | "created_at"> {}

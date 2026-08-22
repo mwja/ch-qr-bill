@@ -6,12 +6,11 @@ export interface Creditor {
     city: string;
     postal_code: string;
     country: string;
-    vat_number: string;
+    vat_number: string | null;
     iban: string;
-    created_at: number;
+    /** Data URL of the logo embedded in the bill document. */
+    logo_base64: string | null;
+    created_at: string;
 }
 
-export interface CreateCreditorInput extends Omit<
-    Creditor,
-    "id" | "created_at"
-> {}
+export interface CreditorInput extends Omit<Creditor, "id" | "created_at"> {}

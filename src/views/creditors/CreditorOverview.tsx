@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { Creditor } from "../../models/creditors";
 import LargeLayout from "../../components/layout/layouts/LargeLayout";
 import Header from "../../components/Header";
+import { errorMessage } from "../../utils/errors";
 import {
     Button,
     DataGrid,
@@ -59,9 +60,10 @@ const columns: TableColumnDefinition<Creditor>[] = [
     },
     {
         columnId: "vat_number",
-        compare: (a, b) => a.vat_number.localeCompare(b.vat_number),
+        compare: (a, b) =>
+            (a.vat_number ?? "").localeCompare(b.vat_number ?? ""),
         renderHeaderCell: () => <span>VAT Number</span>,
-        renderCell: (item) => <span>{item.vat_number}</span>,
+        renderCell: (item) => <span>{item.vat_number ?? "—"}</span>,
     },
     {
         columnId: "iban",
@@ -89,11 +91,7 @@ const columns: TableColumnDefinition<Creditor>[] = [
 
 const Add = bundleIcon(AddFilled, AddRegular);
 export default function CreditorOverview() {
-    const {
-        data: creditorData,
-        isPending: creditorIsPending,
-        error: creditorError,
-    } = useQuery({
+    const { data: creditorData, error: creditorError } = useQuery({
         queryKey: ["creditors"],
         queryFn: () => invoke<Creditor[]>("get_all_creditors"),
     });
@@ -117,7 +115,7 @@ export default function CreditorOverview() {
                         <MessageBarTitle>
                             Error loading debitors
                         </MessageBarTitle>
-                        {creditorError}
+                        {errorMessage(creditorError)}
                     </MessageBarBody>
                 </MessageBar>
             )}

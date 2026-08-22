@@ -47,7 +47,7 @@ export default function useInvoked<T>(
     return { data: result, loading, error, refetch };
 }
 
-export function buildInvokeHook<T, A extends InvokeArgs>(
+export function buildInvokeHook<T, A extends InvokeArgs = InvokeArgs>(
     cmd: string,
 ): (args?: A) => ReturnType<typeof useInvoked<T>> {
     return function useCustomInvoked(args): {

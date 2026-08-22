@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { Debitor } from "../../models/debitors";
 import LargeLayout from "../../components/layout/layouts/LargeLayout";
 import Header from "../../components/Header";
+import { errorMessage } from "../../utils/errors";
 import {
     Button,
     DataGrid,
@@ -81,11 +82,7 @@ const columns: TableColumnDefinition<Debitor>[] = [
 
 const Add = bundleIcon(AddFilled, AddRegular);
 export default function DebitorOverview() {
-    const {
-        data: debitorData,
-        isPending: debitorIsPending,
-        error: debitorError,
-    } = useQuery({
+    const { data: debitorData, error: debitorError } = useQuery({
         queryKey: ["debitors"],
         queryFn: () => invoke<Debitor[]>("get_all_debitors"),
     });
@@ -109,7 +106,7 @@ export default function DebitorOverview() {
                         <MessageBarTitle>
                             Error loading debitors
                         </MessageBarTitle>
-                        {debitorError}
+                        {errorMessage(debitorError)}
                     </MessageBarBody>
                 </MessageBar>
             )}

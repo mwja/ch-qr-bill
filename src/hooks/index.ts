@@ -1,5 +1,5 @@
 import type { Creditor } from "../models/creditors";
-import { Debitor } from "../models/debitors";
+import type { Debitor } from "../models/debitors";
 import { buildInvokeHook } from "./useInvoked";
 
 export const useAllCreditors = buildInvokeHook<Creditor[]>("get_all_creditors");
