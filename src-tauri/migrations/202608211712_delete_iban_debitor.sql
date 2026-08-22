@@ -1,0 +1,1 @@
+ALTER TABLE debitors DROP COLUMN iban;
