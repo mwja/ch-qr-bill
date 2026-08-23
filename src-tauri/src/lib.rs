@@ -14,6 +14,11 @@ fn greet(name: &str) -> String {
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
+            // Desktop only: the updater plugin has no mobile implementation.
+            #[cfg(desktop)]
+            app.handle()
+                .plugin(tauri_plugin_updater::Builder::new().build())?;
+
             let handle = app.handle().clone();
 
             let database = tauri::async_runtime::block_on(async move {
@@ -27,6 +32,8 @@ pub fn run() {
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
+        // Needed to restart the app once an update is installed.
+        .plugin(tauri_plugin_process::init())
         .invoke_handler(tauri::generate_handler![
             invoke::creditors::get_all_creditors,
             invoke::creditors::get_creditor_by_id,

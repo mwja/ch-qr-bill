@@ -2,6 +2,7 @@ import { Outlet } from "react-router";
 import Navigation from "./Navigation";
 import GlobalHeader from "./GlobalHeader";
 import AppBreadcrumbs from "./Breadcrumbs";
+import UpdateNotice from "../UpdateNotice";
 
 export default function Layout() {
     return (
@@ -11,6 +12,7 @@ export default function Layout() {
             </div>
             <div className="flex flex-col h-dvh grow ">
                 <GlobalHeader />
+                <UpdateNotice />
                 <div className="mb-2">
                     <AppBreadcrumbs />
                 </div>

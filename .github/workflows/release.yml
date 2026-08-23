@@ -1,0 +1,61 @@
+name: Release
+
+# Cutting a release is a tag push:
+#
+#   1. bump `version` in package.json and src-tauri/tauri.conf.json
+#   2. commit, then `git tag v0.2.0 && git push --tags`
+#
+# This builds the installer, signs it with the updater key, publishes a release
+# and attaches `latest.json` — which is what installed copies poll.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: ./src-tauri -> target
+
+      - run: pnpm install --frozen-lockfile
+
+      # Fail here rather than shipping something broken.
+      - run: pnpm lint
+      - run: npx tsc --noEmit
+      - run: cargo test --manifest-path src-tauri/Cargo.toml
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Signs the updater artifacts. Without these the build fails, which is
+          # better than publishing a release no one can update to.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: CH QR Bill v__VERSION__
+          releaseBody: Installed copies will offer this update automatically.
+          releaseDraft: false
+          prerelease: false
+          includeUpdaterJson: true
