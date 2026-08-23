@@ -160,13 +160,25 @@ impl Creditor {
         .await
     }
 
-    pub async fn delete<'e, E: SqliteExecutor<'e>>(
-        executor: E,
-        creditor_id: i64,
-    ) -> sqlx::Result<()> {
+    /// Refuses to delete a creditor any bill still points at: the bills would be
+    /// left referencing a party that no longer exists, and their documents could
+    /// no longer be generated.
+    pub async fn delete(pool: &Pool<Sqlite>, creditor_id: i64) -> sqlx::Result<()> {
+        let used_by: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM bills WHERE creditor_id = $1")
+            .bind(creditor_id)
+            .fetch_one(pool)
+            .await?;
+
+        if used_by > 0 {
+            return Err(sqlx::Error::Protocol(format!(
+                "This creditor is used by {} bill(s), so it cannot be deleted.",
+                used_by
+            )));
+        }
+
         sqlx::query("DELETE FROM creditors WHERE id = $1")
             .bind(creditor_id)
-            .execute(executor)
+            .execute(pool)
             .await?;
 
         Ok(())
@@ -268,13 +280,24 @@ impl Debitor {
         .await
     }
 
-    pub async fn delete<'e, E: SqliteExecutor<'e>>(
-        executor: E,
-        debitor_id: i64,
-    ) -> sqlx::Result<()> {
+    /// Refuses to delete a debitor any bill still points at, for the same reason
+    /// as [`Creditor::delete`].
+    pub async fn delete(pool: &Pool<Sqlite>, debitor_id: i64) -> sqlx::Result<()> {
+        let used_by: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM bills WHERE debitor_id = $1")
+            .bind(debitor_id)
+            .fetch_one(pool)
+            .await?;
+
+        if used_by > 0 {
+            return Err(sqlx::Error::Protocol(format!(
+                "This debitor is used by {} bill(s), so it cannot be deleted.",
+                used_by
+            )));
+        }
+
         sqlx::query("DELETE FROM debitors WHERE id = $1")
             .bind(debitor_id)
-            .execute(executor)
+            .execute(pool)
             .await?;
 
         Ok(())
@@ -701,7 +724,21 @@ impl Bill {
         Ok(())
     }
 
+    /// Deletes a bill and its items. Refuses when other bills name this one as
+    /// their replacement, which would leave their `replaced_by` dangling.
     pub async fn delete(pool: &Pool<Sqlite>, bill_id: i64) -> sqlx::Result<()> {
+        let replaces: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM bills WHERE replaced_by = $1")
+            .bind(bill_id)
+            .fetch_one(pool)
+            .await?;
+
+        if replaces > 0 {
+            return Err(sqlx::Error::Protocol(format!(
+                "This bill is the replacement for {} other bill(s), so it cannot be deleted.",
+                replaces
+            )));
+        }
+
         let mut tx = pool.begin().await?;
 
         BillItem::delete_by_bill(&mut *tx, bill_id).await?;
@@ -861,6 +898,82 @@ mod tests {
         assert_eq!(format_date("2026-09-30"), "2026-09-30");
         // Nothing recognisable is left alone rather than mangled.
         assert_eq!(format_date("later"), "later");
+    }
+
+    #[test]
+    fn deleting_a_bill_takes_its_items_with_it() {
+        tauri::async_runtime::block_on(async {
+            let pool = test_pool().await;
+            let (creditor_id, debitor_id) = seed_parties(&pool).await;
+
+            let bill = Bill::create(&pool, bill_input(creditor_id, debitor_id, 8.1))
+                .await
+                .expect("failed to create the bill");
+
+            Bill::delete(&pool, bill.id)
+                .await
+                .expect("failed to delete the bill");
+
+            assert!(Bill::find_by_id(&pool, bill.id).await.is_err());
+            assert!(BillItem::find_by_bill(&pool, bill.id)
+                .await
+                .expect("failed to read the items")
+                .is_empty());
+        });
+    }
+
+    #[test]
+    fn a_replacement_cannot_be_deleted_out_from_under_the_bill_it_replaces() {
+        tauri::async_runtime::block_on(async {
+            let pool = test_pool().await;
+            let (creditor_id, debitor_id) = seed_parties(&pool).await;
+
+            let original = Bill::create(&pool, bill_input(creditor_id, debitor_id, 8.1))
+                .await
+                .expect("failed to create the bill");
+            let replacement = Bill::replace(&pool, original.id)
+                .await
+                .expect("failed to replace the bill");
+
+            // Deleting the replacement would leave `original.replaced_by` dangling.
+            assert!(Bill::delete(&pool, replacement.id).await.is_err());
+            assert!(Bill::find_by_id(&pool, replacement.id).await.is_ok());
+
+            // The original itself is nobody's replacement, so it can go.
+            Bill::delete(&pool, original.id)
+                .await
+                .expect("the original should be deletable");
+        });
+    }
+
+    #[test]
+    fn parties_in_use_by_a_bill_cannot_be_deleted() {
+        tauri::async_runtime::block_on(async {
+            let pool = test_pool().await;
+            let (creditor_id, debitor_id) = seed_parties(&pool).await;
+
+            let bill = Bill::create(&pool, bill_input(creditor_id, debitor_id, 8.1))
+                .await
+                .expect("failed to create the bill");
+
+            assert!(Creditor::delete(&pool, creditor_id).await.is_err());
+            assert!(Debitor::delete(&pool, debitor_id).await.is_err());
+
+            // Both are still there, and the bill still resolves them.
+            assert!(Creditor::find_by_id(&pool, creditor_id).await.is_ok());
+            assert!(Debitor::find_by_id(&pool, debitor_id).await.is_ok());
+
+            // Once the bill is gone, so can they be.
+            Bill::delete(&pool, bill.id)
+                .await
+                .expect("failed to delete the bill");
+            Creditor::delete(&pool, creditor_id)
+                .await
+                .expect("the unused creditor should be deletable");
+            Debitor::delete(&pool, debitor_id)
+                .await
+                .expect("the unused debitor should be deletable");
+        });
     }
 
     #[test]

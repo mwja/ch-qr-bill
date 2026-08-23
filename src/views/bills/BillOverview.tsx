@@ -22,6 +22,7 @@ import {
 } from "@fluentui/react-icons";
 import BillStatusCell from "../../components/bills/BillStatusCell";
 import CopyBillButton from "../../components/bills/CopyBillButton";
+import DeleteButton from "../../components/DeleteButton";
 import Header from "../../components/Header";
 import LargeLayout from "../../components/layout/layouts/LargeLayout";
 import { Bill, formatAmount } from "../../models/bills";
@@ -88,6 +89,14 @@ function buildColumns(
                     {!item.replaced_by && (
                         <CopyBillButton billId={item.id} action="replace" />
                     )}
+                    <DeleteButton
+                        label={`Delete bill ${item.user_facing_id}`}
+                        title="Delete this bill?"
+                        body={`${item.user_facing_id} and its line items will be removed. This cannot be undone.`}
+                        invalidateKey={["bills"]}
+                        onDelete={() =>
+                            invoke("delete_bill", { billId: item.id })}
+                    />
                 </>
             ),
         },

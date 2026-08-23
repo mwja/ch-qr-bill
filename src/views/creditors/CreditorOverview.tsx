@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { Creditor } from "../../models/creditors";
 import LargeLayout from "../../components/layout/layouts/LargeLayout";
+import DeleteButton from "../../components/DeleteButton";
 import Header from "../../components/Header";
 import { errorMessage } from "../../utils/errors";
 import {
@@ -16,13 +17,13 @@ import {
     MessageBarBody,
     MessageBarTitle,
     TableColumnDefinition,
+    Tooltip,
 } from "@fluentui/react-components";
 import {
-    EditRegular,
-    DeleteRegular,
     AddFilled,
     AddRegular,
     bundleIcon,
+    EditRegular,
 } from "@fluentui/react-icons";
 
 const columns: TableColumnDefinition<Creditor>[] = [
@@ -77,13 +78,23 @@ const columns: TableColumnDefinition<Creditor>[] = [
         compare: () => 0,
         renderCell: (item) => (
             <>
-                <Button
-                    aria-label="Edit"
-                    icon={<EditRegular />}
-                    as="a"
-                    href={`#/creditors/${item.id}`}
+                <Tooltip content="Edit this creditor" relationship="label">
+                    <Button
+                        appearance="subtle"
+                        aria-label="Edit this creditor"
+                        icon={<EditRegular />}
+                        as="a"
+                        href={`#/creditors/${item.id}`}
+                    />
+                </Tooltip>
+                <DeleteButton
+                    label={`Delete creditor ${item.name}`}
+                    title="Delete this creditor?"
+                    body={`${item.name} will be removed. A creditor still used by a bill cannot be deleted.`}
+                    invalidateKey={["creditors"]}
+                    onDelete={() =>
+                        invoke("delete_creditor", { creditorId: item.id })}
                 />
-                <Button aria-label="Delete" icon={<DeleteRegular />} />
             </>
         ),
     },
@@ -138,8 +149,14 @@ export default function CreditorOverview() {
                 <DataGridBody<Creditor>>
                     {({ item, rowId }) => (
                         <DataGridRow<Creditor> key={rowId}>
-                            {({ renderCell }) => (
-                                <DataGridCell>{renderCell(item)}</DataGridCell>
+                            {({ renderCell, columnId }) => (
+                                <DataGridCell
+                                    focusMode={columnId === "actions"
+                                        ? "group"
+                                        : "cell"}
+                                >
+                                    {renderCell(item)}
+                                </DataGridCell>
                             )}
                         </DataGridRow>
                     )}

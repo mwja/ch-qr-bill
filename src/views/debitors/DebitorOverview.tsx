@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { Debitor } from "../../models/debitors";
 import LargeLayout from "../../components/layout/layouts/LargeLayout";
+import DeleteButton from "../../components/DeleteButton";
 import Header from "../../components/Header";
 import { errorMessage } from "../../utils/errors";
 import {
@@ -16,13 +17,13 @@ import {
     MessageBarBody,
     MessageBarTitle,
     TableColumnDefinition,
+    Tooltip,
 } from "@fluentui/react-components";
 import {
-    EditRegular,
-    DeleteRegular,
-    bundleIcon,
     AddFilled,
     AddRegular,
+    bundleIcon,
+    EditRegular,
 } from "@fluentui/react-icons";
 
 const columns: TableColumnDefinition<Debitor>[] = [
@@ -67,13 +68,23 @@ const columns: TableColumnDefinition<Debitor>[] = [
         renderCell: (item) => {
             return (
                 <>
-                    <Button
-                        aria-label="Edit"
-                        icon={<EditRegular />}
-                        as="a"
-                        href={`#/debitors/${item.id}`}
+                    <Tooltip content="Edit this debitor" relationship="label">
+                        <Button
+                            appearance="subtle"
+                            aria-label="Edit this debitor"
+                            icon={<EditRegular />}
+                            as="a"
+                            href={`#/debitors/${item.id}`}
+                        />
+                    </Tooltip>
+                    <DeleteButton
+                        label={`Delete debitor ${item.name}`}
+                        title="Delete this debitor?"
+                        body={`${item.name} will be removed. A debitor still used by a bill cannot be deleted.`}
+                        invalidateKey={["debitors"]}
+                        onDelete={() =>
+                            invoke("delete_debitor", { debitorId: item.id })}
                     />
-                    <Button aria-label="Delete" icon={<DeleteRegular />} />
                 </>
             );
         },
@@ -128,8 +139,14 @@ export default function DebitorOverview() {
                 <DataGridBody<Debitor>>
                     {({ item, rowId }) => (
                         <DataGridRow<Debitor> key={rowId}>
-                            {({ renderCell }) => (
-                                <DataGridCell>{renderCell(item)}</DataGridCell>
+                            {({ renderCell, columnId }) => (
+                                <DataGridCell
+                                    focusMode={columnId === "actions"
+                                        ? "group"
+                                        : "cell"}
+                                >
+                                    {renderCell(item)}
+                                </DataGridCell>
                             )}
                         </DataGridRow>
                     )}
