@@ -90,6 +90,7 @@ pub struct BillBuilder {
     bill_date: Option<String>,
     bill_due_date: Option<String>,
     bill_due_date_count: Option<u32>,
+    comment: Option<String>,
 }
 
 impl BillBuilder {
@@ -108,6 +109,7 @@ impl BillBuilder {
             bill_date: None,
             bill_due_date: None,
             bill_due_date_count: None,
+            comment: None,
         }
     }
 
@@ -184,6 +186,11 @@ impl BillBuilder {
 
     pub fn bill_due_date_count(mut self, bill_due_date_count: u32) -> Self {
         self.bill_due_date_count = Some(bill_due_date_count);
+        self
+    }
+
+    pub fn comment(mut self, comment: Option<String>) -> Self {
+        self.comment = comment;
         self
     }
 
@@ -299,6 +306,7 @@ impl BillBuilder {
                     .map(|d| d.postal_code.clone())
                     .unwrap_or_default(),
             );
+            context.insert("comment", &self.comment.clone().unwrap_or_default());
             context.insert("items_html", &items_html);
             context.insert("currency", &currency);
             // Display trims the trailing zero: 8.1 stays "8.1", 8.0 becomes "8".

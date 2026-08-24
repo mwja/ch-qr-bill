@@ -35,6 +35,8 @@ export interface Bill {
     status: BillStatus;
     created_at: string;
     replaced_by: number | null;
+    /** Free-text note printed before the line items on the document. */
+    comment: string | null;
     totals: BillTotals;
 }
 
@@ -58,6 +60,7 @@ export interface BillInput {
     currency: string;
     due_date: string;
     status: BillStatus;
+    comment: string | null;
     items: BillItemInput[];
 }
 

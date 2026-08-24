@@ -5,7 +5,7 @@ import {
     FieldValues,
     useController,
 } from "react-hook-form";
-import { Input, InputProps } from "@fluentui/react-components";
+import { Input, InputProps, Textarea, TextareaProps } from "@fluentui/react-components";
 
 /**
  * Fluent inputs are always controlled (`state.input.value` is set on every
@@ -29,6 +29,31 @@ export function FormInput<T extends FieldValues>(
     return (
         <Input
             {...inputProps}
+            name={field.name}
+            ref={field.ref}
+            value={field.value == null ? "" : String(field.value)}
+            onBlur={field.onBlur}
+            onChange={(_, data) => field.onChange(data.value)}
+        />
+    );
+}
+
+type ControlledTextareaProps<T extends FieldValues> = Omit<
+    TextareaProps,
+    "value" | "defaultValue" | "onChange" | "name" | "ref"
+> & {
+    control: Control<T>;
+    name: FieldPath<T>;
+};
+
+export function FormTextarea<T extends FieldValues>(
+    { control, name, ...textareaProps }: ControlledTextareaProps<T>,
+) {
+    const { field } = useController({ control, name });
+
+    return (
+        <Textarea
+            {...textareaProps}
             name={field.name}
             ref={field.ref}
             value={field.value == null ? "" : String(field.value)}

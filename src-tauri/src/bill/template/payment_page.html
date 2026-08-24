@@ -79,6 +79,13 @@
                 text-align: right;
             }
 
+            /* Commentaire libre, affiché avant le tableau des articles */
+            .comment-block {
+                margin-bottom: 10mm;
+                white-space: pre-line;
+                page-break-inside: avoid;
+            }
+
             /* Tableau des articles */
             .items-table {
                 width: 100%;
@@ -223,6 +230,11 @@
                     </td>
                 </tr>
             </table>
+
+            <!-- COMMENTAIRE (avant le tableau des articles) -->
+            {% if comment %}
+            <div class="comment-block">{{comment}}</div>
+            {% endif %}
 
             <!-- TABLEAU DES ARTICLES (Coupe désormais librement) -->
             <table class="items-table">

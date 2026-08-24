@@ -168,6 +168,7 @@ pub async fn generate_bill_document(
         .debitor(debitor.into())
         .creditor(creditor.into())
         .vat_percentage(bill.vat_percentage)
+        .comment(bill.comment.clone())
         // The amounts printed on the document are the ones SQL derived.
         .totals(bill.totals);
 

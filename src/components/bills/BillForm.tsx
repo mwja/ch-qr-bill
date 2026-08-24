@@ -30,7 +30,7 @@ import {
     formatAmount,
 } from "../../models/bills";
 import { errorMessage } from "../../utils/errors";
-import { FormInput, FormNumberInput } from "../form/inputs";
+import { FormInput, FormNumberInput, FormTextarea } from "../form/inputs";
 import CreditorSelect from "../creditor/CreditorSelect";
 import DebitorSelect from "../debitor/DebitorSelect";
 
@@ -52,6 +52,7 @@ const schema = z.object({
         .string()
         .regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Due date is required" }),
     status: z.enum(BillStatus),
+    comment: z.string(),
     items: z
         .array(
             z.object({
@@ -186,6 +187,7 @@ function toFormValues(
         currency: bill?.currency ?? CURRENCIES[0],
         due_date: bill?.due_date?.slice(0, 10) ?? defaultDueDate(),
         status: bill?.status ?? BillStatus.DRAFT,
+        comment: bill?.comment ?? "",
         items: items?.length
             ? items.map((item) => ({
                 description: item.description,
@@ -404,6 +406,22 @@ export default function BillForm(props: {
 
             <Divider />
 
+            <Field
+                label="Comment"
+                hint="Printed on the document, before the line items."
+                validationMessage={formState.errors.comment?.message}
+                validationState={formState.errors.comment ? "error" : "none"}
+            >
+                <FormTextarea
+                    control={control}
+                    name="comment"
+                    placeholder="e.g. Thank you for your business."
+                    resize="vertical"
+                />
+            </Field>
+
+            <Divider />
+
             <div className={styles.section}>
                 <div className={styles.sectionHeader}>
                     <Subtitle2>Line items</Subtitle2>
@@ -496,6 +514,18 @@ export default function BillForm(props: {
                         </div>
                     ))}
                 </div>
+                <Button
+                    appearance="secondary"
+                    icon={<AddRegular />}
+                    onClick={() =>
+                        append({
+                            description: "",
+                            quantity: 1,
+                            unit_price: 0,
+                        })}
+                >
+                    Add item
+                </Button>
 
                 {itemsError && (
                     <MessageBar intent="warning">

@@ -439,6 +439,8 @@ pub struct Bill {
     pub status: BillStatus,
     pub replaced_by: Option<i64>,
     pub created_at: String,
+    /// Free-text note printed before the line items on the document.
+    pub comment: Option<String>,
     /// Derived by SQL, see [`BillTotals`].
     pub totals: BillTotals,
 }
@@ -463,6 +465,7 @@ impl<'r> FromRow<'r, SqliteRow> for Bill {
             status,
             replaced_by: row.try_get::<Option<i64>, _>("replaced_by")?,
             created_at: row.try_get("created_at")?,
+            comment: row.try_get("comment")?,
             // Reading a bill always reads the totals the database derived for it.
             totals: BillTotals::from_row(row)?,
         })
@@ -489,6 +492,8 @@ pub struct BillInput {
     #[serde(default)]
     pub status: BillStatus,
     #[serde(default)]
+    pub comment: Option<String>,
+    #[serde(default)]
     pub items: Vec<BillItemInput>,
 }
 
@@ -498,7 +503,7 @@ impl Bill {
     pub const SELECT: &'static str = r#"--sql
         SELECT
             b.id, b.user_facing_id, b.creditor_id, b.debitor_id, b.vat_percentage,
-            b.currency, b.due_date, b.status, b.replaced_by, b.created_at,
+            b.currency, b.due_date, b.status, b.replaced_by, b.created_at, b.comment,
             t.net_total, t.vat_total, t.gross_total
         FROM bills b
         JOIN bill_totals t ON t.bill_id = b.id
@@ -563,8 +568,8 @@ impl Bill {
 
         let bill_id: i64 = sqlx::query_scalar(
             r#"--sql
-            INSERT INTO bills (user_facing_id, creditor_id, debitor_id, vat_percentage, currency, due_date, status, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            INSERT INTO bills (user_facing_id, creditor_id, debitor_id, vat_percentage, currency, due_date, status, comment, created_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             RETURNING id
             "#,
         )
@@ -575,6 +580,7 @@ impl Bill {
         .bind(&input.currency)
         .bind(&due_date)
         .bind(input.status.as_str())
+        .bind(&input.comment)
         .bind(created_at.format(SQLITE_DATETIME).to_string())
         .fetch_one(&mut *tx)
         .await?;
@@ -599,8 +605,8 @@ impl Bill {
             r#"--sql
             UPDATE bills
             SET creditor_id = $1, debitor_id = $2, vat_percentage = $3, currency = $4,
-                due_date = $5, status = $6
-            WHERE id = $7
+                due_date = $5, status = $6, comment = $7
+            WHERE id = $8
             "#,
         )
         .bind(input.creditor_id)
@@ -609,6 +615,7 @@ impl Bill {
         .bind(&input.currency)
         .bind(&due_date)
         .bind(input.status.as_str())
+        .bind(&input.comment)
         .bind(bill_id)
         .execute(&mut *tx)
         .await?;
@@ -649,6 +656,7 @@ impl Bill {
                 currency: source.currency,
                 due_date,
                 status: BillStatus::Draft,
+                comment: source.comment,
                 items: items
                     .into_iter()
                     .map(|item| BillItemInput {
@@ -815,6 +823,7 @@ mod tests {
             currency: "CHF".into(),
             due_date: "2026-09-30".into(),
             status: BillStatus::Draft,
+            comment: None,
             items: vec![
                 BillItemInput {
                     description: "Two at fifty".into(),
