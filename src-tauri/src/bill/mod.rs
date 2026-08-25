@@ -6,6 +6,18 @@ use crate::db::models::{self, BillTotals};
 // include payment_item.html and payment_page.html
 const PAYMENT_ITEM_HTML: &str = include_str!("template/payment_item.html");
 const PAYMENT_PAGE_HTML: &str = include_str!("template/payment_page.html");
+const ITEMS_TABLE_HTML: &str = include_str!("template/items_table.html");
+
+/// Ironpress may move a whole `page-break-inside: auto` table to the next page
+/// if it fits on a blank page, leaving page 1 mostly empty. Split the rows into
+/// two tables: keep the first within page 1's remaining space, then force the
+/// second onto page 2. Ironpress handles normal table splitting correctly; this
+/// only avoids the case where it makes the wrong initial page-break decision.
+/// 
+/// Row counts below are conservative estimates; logos reduce the available space.
+fn max_items_before_forced_break(has_logo: bool) -> usize {
+    if has_logo { 8 } else { 12 }
+}
 
 pub struct Creditor {
     pub name: String,
@@ -239,7 +251,9 @@ impl BillBuilder {
         let mut tera = tera::Tera::new();
         tera.add_raw_template("item", PAYMENT_ITEM_HTML).unwrap();
         tera.add_raw_template("page", PAYMENT_PAGE_HTML).unwrap();
-        let items_html = self
+        tera.add_raw_template("items_table", ITEMS_TABLE_HTML)
+            .unwrap();
+        let item_rows: Vec<String> = self
             .items
             .iter()
             .map(|item| {
@@ -251,8 +265,25 @@ impl BillBuilder {
                 context.insert("total_price", &format!("{:.2}", item.total_price));
                 tera.render("item", &context).unwrap()
             })
-            .collect::<Vec<String>>()
-            .join("");
+            .collect();
+
+        let render_items_table = |rows_html: &str, page_break_before: bool| -> String {
+            let mut context = tera::Context::new();
+            context.insert("currency", &currency);
+            context.insert("rows_html", rows_html);
+            context.insert("page_break_before", &page_break_before);
+            tera.render("items_table", &context).unwrap()
+        };
+
+        // See `max_items_before_forced_break`: only the split point (not the
+        // rows themselves) works around the renderer's pagination quirk.
+        let split_at =
+            max_items_before_forced_break(logo_base64.is_some()).min(item_rows.len());
+        let (first_page_rows, overflow_rows) = item_rows.split_at(split_at);
+        let mut items_tables_html = render_items_table(&first_page_rows.join(""), false);
+        if !overflow_rows.is_empty() {
+            items_tables_html.push_str(&render_items_table(&overflow_rows.join(""), true));
+        }
 
         let page_html = {
             let mut context = tera::Context::new();
@@ -307,7 +338,7 @@ impl BillBuilder {
                     .unwrap_or_default(),
             );
             context.insert("comment", &self.comment.clone().unwrap_or_default());
-            context.insert("items_html", &items_html);
+            context.insert("items_tables_html", &items_tables_html);
             context.insert("currency", &currency);
             // Display trims the trailing zero: 8.1 stays "8.1", 8.0 becomes "8".
             context.insert("vat_percentage", &self.vat_percentage.to_string());
@@ -446,6 +477,7 @@ mod tests {
 #[cfg(test)]
 mod layout_tests {
     use super::tests::{builder, LOGO};
+    use super::BillItem;
 
     /// A4 width in points, and the template's 20mm page margin.
     const PAGE_WIDTH: f32 = 595.3;
@@ -529,6 +561,50 @@ mod layout_tests {
             .into_iter()
             .filter(|x| *x > limit)
             .collect()
+    }
+
+    /// How many text-showing operators (`Tj`/`TJ`) each page's content stream
+    /// carries — a rough proxy for "how many lines of text got painted here",
+    /// without needing to decode the embedded font's glyph encoding.
+    fn text_operator_counts(pdf: &[u8]) -> Vec<usize> {
+        text_streams(pdf)
+            .iter()
+            .map(|stream| {
+                stream.matches("Tj").count() + stream.matches("TJ").count()
+            })
+            .collect()
+    }
+
+    #[test]
+    fn a_boundary_sized_item_list_does_not_defer_every_row_to_page_two() {
+        // Ironpress, the HTML-to-PDF engine, otherwise defers a whole
+        // `page-break-inside: auto` table to the next page whenever the table
+        // would fit on a blank page but not in what's left of the current one
+        // — leaving page 1 with nothing but the header/address blocks. 20
+        // items sits in that range for this template (see
+        // `max_items_before_forced_break`); `build_html` splits the rows into
+        // two tables to keep some of them on page 1.
+        let mut b = builder(None);
+        for i in 0..20 {
+            b = b.add_item(BillItem {
+                description: format!("Line item number {i}"),
+                quantity: 1.0,
+                unit_price: 10.0,
+                total_price: 10.0,
+            });
+        }
+        let pdf = b.build().expect("build failed");
+        let counts = text_operator_counts(&pdf);
+
+        assert!(counts.len() >= 2, "expected at least 2 pages, got {counts:?}");
+        // The header/address blocks alone paint a couple dozen text runs; if
+        // the whole table were deferred to page 2, page 1's count would sit
+        // near that baseline instead of climbing with rows placed on it.
+        assert!(
+            counts[0] > 40,
+            "page 1 painted only {} text runs — the item rows look deferred to page 2 instead of split across pages",
+            counts[0]
+        );
     }
 
     #[test]

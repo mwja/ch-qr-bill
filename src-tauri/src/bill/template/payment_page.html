@@ -96,6 +96,12 @@
             .items-table thead {
                 display: table-header-group;
             }
+            /* See `max_items_before_forced_break` in bill/mod.rs: forces the
+               overflow chunk of line items onto a fresh page instead of
+               leaving that decision to the renderer. */
+            .items-table-break {
+                page-break-before: always;
+            }
             .items-table tr {
                 page-break-inside: auto;
             }
@@ -236,20 +242,8 @@
             <div class="comment-block">{{comment}}</div>
             {% endif %}
 
-            <!-- TABLEAU DES ARTICLES (Coupe désormais librement) -->
-            <table class="items-table">
-                <thead>
-                    <tr>
-                        <th>Description</th>
-                        <th class="num">Quantité</th>
-                        <th class="num">Prix unitaire</th>
-                        <th class="num">Montant ({{currency}})</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {{items_html}}
-                </tbody>
-            </table>
+            <!-- TABLEAU(X) DES ARTICLES (Coupe désormais librement) -->
+            {{items_tables_html}}
 
             <!-- TOTAUX REFAITS SANS FLEXBOX -->
             <div class="totals-container-block clearfix">

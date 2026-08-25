@@ -1,0 +1,13 @@
+<table class="items-table{% if page_break_before %} items-table-break{% endif %}">
+    <thead>
+        <tr>
+            <th>Description</th>
+            <th class="num">Quantité</th>
+            <th class="num">Prix unitaire</th>
+            <th class="num">Montant ({{currency}})</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{rows_html}}
+    </tbody>
+</table>
